@@ -608,44 +608,14 @@ const S={
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
-<!-- Supabase Real-time for Land of Legacy Team Tracker -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<body>
+  <div id="root"></div>
 
-<script>
-  // Your Supabase details
-  const supabaseUrl = 'https://mqjizwswalijbgifmqmx.supabase.co';
-  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaml6d3N3YWxpamJnaWZtcW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjExNDUsImV4cCI6MjA4OTk5NzE0NX0.KgJeBYVvLnSkdYvpGYSV6wAdbD5ER7wIRfCTMQOmp-o';
+  <!-- SUPABASE MUST LOAD FIRST -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  const supabase = Supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-  console.log("✅ Supabase client created");
-
-  // Real-time subscription (listens to all changes)
-  supabase
-    .channel('team-tracker')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: '*' },
-      (payload) => {
-        console.log('🔴 Real-time update:', payload);
-        // TODO: Refresh your team list here
-      }
-    )
-    .subscribe((status) => {
-      console.log('Supabase status:', status);
-
-      if (status === 'SUBSCRIBED') {
-        console.log("🎉 Supabase Real-time CONNECTED!");
-
-        // Hide the spinning circle
-        const spinner = document.getElementById('loading-spinner') || 
-                        document.querySelector('.spinner, .loader, #loader, .loading, .circle');
-        if (spinner) {
-          spinner.style.display = 'none';
-          console.log("🌀 Spinner hidden - app is now live");
-        }
-      }
-    });
-</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 </body>
 </html>
