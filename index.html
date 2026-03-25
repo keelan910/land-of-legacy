@@ -537,31 +537,25 @@ const S={
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
-<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-database-compat.js"></script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-<script>
-  // Your Firebase config (already filled with your real values)
+  // Your web app's Firebase configuration
   const firebaseConfig = {
-    apiKey: "AIzaSyCn-qpWPCppqUys57jzK-YfW3pdysfzqhQ",
-    authDomain: "land-of-legacy.firebaseapp.com",
-    databaseURL: "https://land-of-legacy-default-rtdb.firebaseio.com",
-    projectId: "land-of-legacy",
-    storageBucket: "land-of-legacy.firebasestorage.app",
-    messagingSenderId: "436702144152",
-    appId: "1:436702144152:web:186ad3bbc694de9c8bd2ed",
-    measurementId: "G-H5WTDY4KDH"
+    apiKey: "AIzaSyBHzShetUbSixuIU5224L5vGTyDs4OLOaM",
+    authDomain: "loli-2bfc2.firebaseapp.com",
+    projectId: "loli-2bfc2",
+    storageBucket: "loli-2bfc2.firebasestorage.app",
+    messagingSenderId: "694553175659",
+    appId: "1:694553175659:web:569028ff735a3b1979f32e"
   };
 
-  // Initialize Firebase (old-style / compat mode)
-  const app = firebase.initializeApp(firebaseConfig);
-  const analytics = firebase.analytics();
-  const db = firebase.database();
-
-  console.log("✅ Firebase connected successfully! (compat mode)");
-
-  // Your React code can now use: firebase.database(), firebase.analytics(), etc.
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
 </script>
 </body>
 </html>
