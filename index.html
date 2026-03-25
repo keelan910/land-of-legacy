@@ -538,28 +538,28 @@ const S={
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script type="module">
-  // Import the Firebase SDKs
+  // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // ────── PASTE YOUR FULL FIREBASE CONFIG HERE ──────
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
-    apiKey: "AIzaSyB...YOUR_FULL_API_KEY_HERE...",
-    authDomain: "land-of-legacy-abc.firebaseapp.com",
-    databaseURL: "https://land-of-legacy-abc.firebaseio.com",
-    projectId: "land-of-legacy-abc",
-    storageBucket: "land-of-legacy-abc.firebasestorage.app",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "G-XXXXXXXXXX"
+    apiKey: "AIzaSyCn-qpWPCppqUys57jzK-YfW3pdysfzqhQ",
+    authDomain: "land-of-legacy.firebaseapp.com",
+    databaseURL: "https://land-of-legacy-default-rtdb.firebaseio.com",
+    projectId: "land-of-legacy",
+    storageBucket: "land-of-legacy.firebasestorage.app",
+    messagingSenderId: "436702144152",
+    appId: "1:436702144152:web:186ad3bbc694de9c8bd2ed",
+    measurementId: "G-H5WTDY4KDH"
   };
-  // ───────────────────────────────────────────────────
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
-
-  console.log("✅ Firebase is now connected!");
 </script>
 </body>
 </html>
