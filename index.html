@@ -33,23 +33,6 @@ button{-webkit-tap-highlight-color:transparent;border:none;cursor:pointer;font-f
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 </style>
 
-<script>
-// ═══════════════════════════════════════════════════════════
-//  FIREBASE CONFIG — PASTE YOUR CONFIG HERE (see instructions)
-// ═══════════════════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "YOUR_APP_ID"
-};
-// ═══════════════════════════════════════════════════════════
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 </script>
 </head>
 <body>
@@ -78,10 +61,49 @@ const ADMIN_PIN = "9999";
 const RATE = 0.25;
 // ════════════════════════════════════════════════════════
 
-// Firebase helpers
-const fbSet = (path, val) => db.ref(path).set(val);
-const fbGet = async (path) => { const snap = await db.ref(path).once("value"); return snap.val(); };
-const fbListen = (path, cb) => { const ref = db.ref(path); ref.on("value", snap => cb(snap.val())); return () => ref.off("value"); };
+// ====================== SUPABASE HELPERS ======================
+const supabaseUrl = 'https://mqjizwswalijbgifmqmx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaml6d3N3YWxpamJnaWZtcW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjExNDUsImV4cCI6MjA4OTk5NzE0NX0.KgJeBYVvLnSkdYvpGYSV6wAdbD5ER7wIRfCTMQOmp-o';
+
+const supabase = Supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+const sbSet = async (path, val) => {
+  const [table, id] = path.split('/');
+  if (table === "days") {
+    const { error } = await supabase.from('days').upsert({ date: id, data: val });
+    if (error) console.error(error);
+  }
+};
+
+const sbGet = async (path) => {
+  const [table] = path.split('/');
+  if (table === "days") {
+    const { data, error } = await supabase.from('days').select('data');
+    if (error) { console.error(error); return {}; }
+    return data.reduce((acc, row) => {
+      acc[row.date] = row.data;
+      return acc;
+    }, {});
+  }
+  return {};
+};
+
+const sbListen = (path, callback) => {
+  const [table, date] = path.split('/');
+  if (table === "days") {
+    const channel = supabase
+      .channel(`days-${date}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'days', filter: `date=eq.${date}` },
+        (payload) => {
+          callback(payload.new?.data || empty());
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }
+  return () => {};
+};
 
 const dayKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const todayK = () => dayKey(new Date());
@@ -161,19 +183,23 @@ function App() {
   const SK = `days/${todayK()}`;
   const showToast = m => { setToast(m); setTimeout(()=>setToast(null),2200); };
 
-  const onLogin = useCallback(async (r,agentId) => {
-    setRole(r); setMe(agentId);
-    // Listen to today in realtime
-    const unsub = fbListen(SK, val => {
-      setData(val ? {...empty(),...val} : empty());
-      setConnected(true);
-    });
-    // Load history
-    const all = await fbGet("days") || {};
-    setAllDays(all);
-    setTimeout(()=>setAnim(true),80);
-    return unsub;
-  }, []);
+  const onLogin = useCallback(async (r, agentId) => {
+  setRole(r); 
+  setMe(agentId);
+
+  // Real-time listen to today's data
+  const unsub = sbListen(SK, (val) => {
+    setData(val ? { ...empty(), ...val } : empty());
+    setConnected(true);
+  });
+
+  // Load all history
+  const all = await sbGet("days") || {};
+  setAllDays(all);
+
+  setTimeout(() => setAnim(true), 80);
+  return unsub;
+}, []);
 
   // Keep history fresh
   useEffect(()=>{
@@ -185,7 +211,11 @@ function App() {
     return ()=>clearInterval(iv);
   },[role]);
 
-  const save = async (nd) => { setData(nd); await fbSet(SK,nd); };
+ const save = async (nd) => {
+  setData(nd);
+  await sbSet(SK, nd);
+  showToast("Saved");
+};
   const startEdit = (mid,f) => { setEditing(`${mid}-${f}`); setEditVal(""); };
   const commit = (mid,f) => {
     const v = parseFloat(editVal)||0;
