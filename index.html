@@ -537,40 +537,44 @@ const S={
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
-<!-- Firebase Compat SDK - Clean version for GitHub Pages -->
-<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
+<!-- Supabase Real-time for Land of Legacy Team Tracker -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyBHzShetUbSixuIU5224L5vGTyDs4OLOaM",
-    authDomain: "loli-2bfc2.firebaseapp.com",
-    projectId: "loli-2bfc2",
-    storageBucket: "loli-2bfc2.firebasestorage.app",
-    messagingSenderId: "694553175659",
-    appId: "1:694553175659:web:569028ff735a3b1979f32e"
-  };
+  // Your Supabase details
+  const supabaseUrl = 'https://mqjizwswalijbgifmqmx.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaml6d3N3YWxpamJnaWZtcW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjExNDUsImV4cCI6MjA4OTk5NzE0NX0.KgJeBYVvLnSkdYvpGYSV6wAdbD5ER7wIRfCTMQOmp-o';
 
-  try {
-    // Initialize Firebase (compat version - no "app =" needed)
-    firebase.initializeApp(firebaseConfig);
-    console.log("✅ Firebase App initialized successfully");
+  const supabase = Supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-    // Initialize Firestore
-    const db = firebase.firestore();
-    console.log("✅ Firestore initialized");
+  console.log("✅ Supabase client created");
 
-    // Hide the loading spinner (update the selector to match your HTML)
-    // Example:
-    // document.getElementById('loading-spinner').style.display = 'none';
-    // or document.querySelector('.spinner').style.display = 'none';
+  // Real-time subscription (listens to all changes)
+  supabase
+    .channel('team-tracker')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: '*' },
+      (payload) => {
+        console.log('🔴 Real-time update:', payload);
+        // TODO: Refresh your team list here
+      }
+    )
+    .subscribe((status) => {
+      console.log('Supabase status:', status);
 
-  } catch (error) {
-    console.error("❌ Firebase failed:", error);
-    alert("Firebase Error: " + error.message);
-  }
-</script>
+      if (status === 'SUBSCRIBED') {
+        console.log("🎉 Supabase Real-time CONNECTED!");
+
+        // Hide the spinning circle
+        const spinner = document.getElementById('loading-spinner') || 
+                        document.querySelector('.spinner, .loader, #loader, .loading, .circle');
+        if (spinner) {
+          spinner.style.display = 'none';
+          console.log("🌀 Spinner hidden - app is now live");
+        }
+      }
+    });
 </script>
 </body>
 </html>
