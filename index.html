@@ -538,12 +538,14 @@ const S={
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script type="module">
-  // Import the functions you need from the SDKs you need
+  // Import what you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  // Your web app's Firebase configuration
+  // ← ADD THE SERVICES YOU ACTUALLY USE
+  // Example: if you're using Firestore (most common for team trackers)
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+  // Your config (looks good)
   const firebaseConfig = {
     apiKey: "AIzaSyBHzShetUbSixuIU5224L5vGTyDs4OLOaM",
     authDomain: "loli-2bfc2.firebaseapp.com",
@@ -554,8 +556,24 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
   };
 
   // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
+  let app;
+  try {
+    app = initializeApp(firebaseConfig);
+    console.log("✅ Firebase App initialized successfully", app);
+
+    // Initialize the service you're using (this forces a real connection)
+    const db = getFirestore(app);
+    console.log("✅ Firestore initialized", db);
+
+    // Optional: quick test read (remove later if not needed)
+    // import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    // const querySnapshot = await getDocs(collection(db, "your-collection-name"));
+    // console.log("Test read successful:", querySnapshot.size);
+
+  } catch (error) {
+    console.error("❌ Firebase initialization failed:", error);
+    alert("Firebase error: " + error.message);   // ← this will show you the problem on mobile too
+  }
 </script>
 </body>
 </html>
