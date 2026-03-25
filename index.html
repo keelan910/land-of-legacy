@@ -537,13 +537,12 @@ const S={
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
-<!-- Firebase Compat SDK (best for GitHub Pages + plain HTML) -->
+<!-- Firebase Compat SDK - Clean version for GitHub Pages -->
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore-compat.js"></script>
-<!-- Add more if needed: firebase-auth-compat.js, firebase-storage-compat.js, etc. -->
 
 <script>
-  // Your config (unchanged)
+  // Your Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyBHzShetUbSixuIU5224L5vGTyDs4OLOaM",
     authDomain: "loli-2bfc2.firebaseapp.com",
@@ -553,25 +552,25 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
     appId: "1:694553175659:web:569028ff735a3b1979f32e"
   };
 
-  // Initialize Firebase
-  let app;
   try {
-    app = firebase.initializeApp(firebaseConfig);
+    // Initialize Firebase (compat version - no "app =" needed)
+    firebase.initializeApp(firebaseConfig);
     console.log("✅ Firebase App initialized successfully");
 
-    // Initialize Firestore (or whatever you're using)
+    // Initialize Firestore
     const db = firebase.firestore();
     console.log("✅ Firestore initialized");
 
-    // Optional quick test (remove after it works)
-    // db.collection("your-collection").get().then(snapshot => {
-    //   console.log("✅ Test read successful:", snapshot.size);
-    // });
+    // Hide the loading spinner (update the selector to match your HTML)
+    // Example:
+    // document.getElementById('loading-spinner').style.display = 'none';
+    // or document.querySelector('.spinner').style.display = 'none';
 
   } catch (error) {
-    console.error("❌ Firebase initialization failed:", error);
-    alert("Firebase Error: " + error.message);  // This will pop up on your phone too
+    console.error("❌ Firebase failed:", error);
+    alert("Firebase Error: " + error.message);
   }
+</script>
 </script>
 </body>
 </html>
