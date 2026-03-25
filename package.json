@@ -1,0 +1,7 @@
+{
+  "name": "land-of-legacy",
+  "version": "1.0.0",
+  "dependencies": {
+    "@netlify/neon": "^0.1.0"
+  }
+}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Land of Legacy"/>
+<meta name="theme-color" content="#050507"/>
+<title>Land of Legacy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050507' width='100' height='100' rx='22'/><text x='50' y='65' text-anchor='middle' font-size='50' fill='%23C9A84C'>◈</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation;height:100%}
+body{overscroll-behavior:none;background:#050507;font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased;min-height:100dvh;color:#E2E4EA}
+input:focus{outline:none}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+button{-webkit-tap-highlight-color:transparent;border:none;cursor:pointer;font-family:inherit}
+::-webkit-scrollbar{display:none}
+#root{min-height:100dvh}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes barIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{text-shadow:0 0 20px rgba(201,168,76,.2)}50%{text-shadow:0 0 40px rgba(201,168,76,.5)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes breathe{0%,100%{opacity:.35;transform:scale(.95)}50%{opacity:1;transform:scale(1)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes dotFill{from{transform:scale(0)}to{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const{useState,useEffect,useCallback}=React;
+
+const AGENTS=[
+  {id:"ap",name:"AP",goal:7000,color:"#C9A84C",pin:"1001"},
+  {id:"ryan",name:"Ryan",goal:0,color:"#5B8BD4",pin:"1002"},
+  {id:"john",name:"John",goal:0,color:"#4EBF8B",pin:"1003"},
+  {id:"matt",name:"Matthew",goal:0,color:"#9B7ED8",pin:"1004"},
+  {id:"chris",name:"Christian",goal:0,color:"#D46B8C",pin:"1005"},
+  {id:"keel",name:"Keelan",goal:0,color:"#D4845B",pin:"1006"},
+  {id:"kent",name:"Kente",goal:0,color:"#4EB8B5",pin:"1007"},
+];
+const ADMIN_PIN="9999";
+const RATE=0.25;
+const API="/.netlify/functions/api";
+
+async function dbInit(){try{await fetch(`${API}?action=init`);}catch(e){console.error(e);}}
+async function dbGet(date){try{const r=await fetch(`${API}?action=get&date=${date}`);const j=await r.json();return j.data||null;}catch(e){console.error(e);return null;}}
+async function dbAll(){try{const r=await fetch(`${API}?action=all`);const j=await r.json();return j.data||{};}catch(e){console.error(e);return{};}}
+async function dbSave(date,data){try{await fetch(`${API}?action=save`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({date,data})});}catch(e){console.error(e);}}
+
+const dayKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const todayK=()=>dayKey(new Date());
+const $=n=>"$"+Number(n||0).toLocaleString("en-US");
+const empty=()=>AGENTS.reduce((a,m)=>({...a,[m.id]:{ap:0,pol:0}}),{});
+
+function rangeDays(t){const n=new Date(),d=[];if(t==="week"){const dow=n.getDay();for(let i=dow;i>=0;i--){const x=new Date(n);x.setDate(n.getDate()-i);d.push(dayKey(x));}}else if(t==="month"){for(let i=1;i<=n.getDate();i++)d.push(dayKey(new Date(n.getFullYear(),n.getMonth(),i)));}else if(t==="year"){const y=n.getFullYear();for(let m=0;m<=n.getMonth();m++){const mx=m===n.getMonth()?n.getDate():new Date(y,m+1,0).getDate();for(let i=1;i<=mx;i++)d.push(dayKey(new Date(y,m,i)));}}return d;}
+
+// ═══════════════════════════════
+//  LOADING SCREEN
+// ═══════════════════════════════
+function LoadingScreen(){
+  return(
+    <div style={{minHeight:"100dvh",background:"#050507",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:24,padding:32}}>
+      <div style={{position:"relative",width:80,height:80,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{position:"absolute",inset:0,border:"2px solid rgba(201,168,76,.08)",borderTopColor:"rgba(201,168,76,.5)",borderRadius:"50%",animation:"spin 1.2s linear infinite"}}/>
+        <span style={{fontSize:32,color:"#C9A84C",animation:"breathe 2.5s ease infinite"}}>◈</span>
+      </div>
+      <div>
+        <div style={{fontSize:18,fontWeight:900,letterSpacing:6,color:"#C9A84C",textAlign:"center",fontFamily:"'Outfit',sans-serif"}}>LAND OF LEGACY</div>
+        <div style={{width:140,height:2,borderRadius:2,background:"rgba(255,255,255,.04)",overflow:"hidden",margin:"12px auto 0"}}>
+          <div style={{width:"100%",height:"100%",background:"linear-gradient(90deg,transparent,#C9A84C,transparent)",backgroundSize:"200% 100%",animation:"shimmer 1.5s ease infinite"}}/>
+        </div>
+      </div>
+      <div style={{fontSize:10,color:"#252830",fontFamily:"'IBM Plex Mono',monospace",letterSpacing:2,textTransform:"uppercase"}}>Preparing your dashboard</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+//  LOCK SCREEN
+// ═══════════════════════════════
+function LockScreen({onLogin}){
+  const[pin,setPin]=useState("");
+  const[err,setErr]=useState(false);
+  const[pressed,setPressed]=useState(null);
+  const tryLogin=p=>{const v=p||pin;if(v===ADMIN_PIN){onLogin("admin",null);return;}const ag=AGENTS.find(a=>a.pin===v);if(ag){onLogin("agent",ag.id);return;}setErr(true);setPin("");};
+  const tapNum=n=>{setPressed(n);setErr(false);setTimeout(()=>setPressed(null),100);const next=pin+n;setPin(next);if(next.length===4)setTimeout(()=>tryLogin(next),120);};
+  return(
+    <div style={L.wrap}>
+      <div style={L.glow}/>
+      <div style={L.logoArea}><div style={L.shield}>◈</div><h1 style={L.brand}>LAND OF LEGACY</h1><div style={L.tag}>TEAM PERFORMANCE TRACKER</div></div>
+      <div style={L.dotRow}>{[0,1,2,3].map(i=>(<div key={i} style={L.dotOuter}><div style={{...L.dotInner,background:i<pin.length?"#C9A84C":"transparent",boxShadow:i<pin.length?"0 0 12px rgba(201,168,76,.5)":"none",transform:i<pin.length?"scale(1)":"scale(0)",transition:"all .15s ease"}}/></div>))}</div>
+      {err?<div style={L.err}>Invalid code — try again</div>:<div style={L.hint}>Enter your 4-digit PIN</div>}
+      <div style={L.pad}>{[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((n,i)=>(n===""?<div key={i}/>:<button key={i} onClick={()=>n==="⌫"?(()=>{setPin(pin.slice(0,-1));setErr(false);})():tapNum(String(n))} style={{...L.btn,...(pressed===String(n)?{background:"rgba(201,168,76,.1)",transform:"scale(.96)"}:{})}}><span style={n==="⌫"?{fontSize:18,color:"#4A5060"}:{fontSize:24}}>{n}</span></button>))}</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+//  MAIN APP
+// ═══════════════════════════════
+function App(){
+  const[role,setRole]=useState(null);
+  const[me,setMe]=useState(null);
+  const[data,setData]=useState(null);
+  const[allDays,setAllDays]=useState({});
+  const[tab,setTab]=useState("dash");
+  const[period,setPeriod]=useState("day");
+  const[editing,setEditing]=useState(null);
+  const[editVal,setEditVal]=useState("");
+  const[anim,setAnim]=useState(false);
+  const[toast,setToast]=useState(null);
+  const[loading,setLoading]=useState(false);
+
+  const td=todayK();
+  const showToast=m=>{setToast(m);setTimeout(()=>setToast(null),2200);};
+
+  useEffect(()=>{dbInit();},[]);
+
+  const onLogin=useCallback(async(r,agentId)=>{
+    setRole(r);setMe(agentId);setLoading(true);
+    const todayData=await dbGet(td);
+    setData(todayData?{...empty(),...todayData}:empty());
+    const all=await dbAll();
+    setAllDays(all);
+    setLoading(false);
+    setTimeout(()=>setAnim(true),60);
+  },[]);
+
+  useEffect(()=>{if(!role||loading)return;const iv=setInterval(async()=>{const d=await dbGet(td);if(d)setData(prev=>({...empty(),...d}));const all=await dbAll();setAllDays(all);},6000);return()=>clearInterval(iv);},[role,loading]);
+
+  const save=async nd=>{setData(nd);await dbSave(td,nd);};
+  const startEdit=(mid,f)=>{setEditing(`${mid}-${f}`);setEditVal("");};
+  const commit=(mid,f)=>{const v=parseFloat(editVal)||0;save({...data,[mid]:{...data[mid],[f]:v}});setEditing(null);showToast(`${AGENTS.find(a=>a.id===mid)?.name} updated`);};
+  const onKey=(e,mid,f)=>{if(e.key==="Enter"){e.target.blur();commit(mid,f);}if(e.key==="Escape")setEditing(null);};
+
+  const getAgg=useCallback(t=>{if(t==="day")return data||empty();const days=rangeDays(t);const agg=empty();const src={...allDays,[td]:data};for(const d of days){const dd=src[d];if(dd)for(const m of AGENTS){agg[m.id].ap+=(dd[m.id]?.ap||0);agg[m.id].pol+=(dd[m.id]?.pol||0);}}return agg;},[data,allDays]);
+
+  if(!role)return<LockScreen onLogin={onLogin}/>;
+  if(loading||!data)return<LoadingScreen/>;
+
+  const agg=getAgg(period);
+  const totAP=Object.values(agg).reduce((s,v)=>s+(v.ap||0),0);
+  const totPol=Object.values(agg).reduce((s,v)=>s+(v.pol||0),0);
+  const totComm=totAP*RATE;
+  const maxAP=Math.max(...AGENTS.map(m=>agg[m.id]?.ap||0),1);
+  const ranked=[...AGENTS].sort((a,b)=>(agg[b.id]?.ap||0)-(agg[a.id]?.ap||0));
+  const pLabel={day:"Today",week:"This Week",month:"This Month",year:"This Year"}[period];
+  const isAdmin=role==="admin";
+  const myAgent=AGENTS.find(a=>a.id===me);
+
+  return(
+    <div style={S.shell}>
+      {/* HEADER */}
+      <div style={S.topSafe}>
+        <div style={S.hRow}>
+          <div><div style={S.bRow}><span style={S.bIcon}>◈</span><span style={S.bTxt}>LAND OF LEGACY</span></div><div style={S.welcome}>{isAdmin?"Admin Dashboard":`Welcome back, ${myAgent?.name}`}</div></div>
+          <button onClick={()=>{setRole(null);setMe(null);setData(null);setTab("dash");setPeriod("day");setAnim(false);}} style={S.logBtn}>Log out</button>
+        </div>
+      </div>
+
+      {/* PERIOD PILLS */}
+      <div style={S.pillRow}>{["day","week","month","year"].map(p=>(<button key={p} onClick={()=>setPeriod(p)} style={{...S.pill,...(period===p?S.pillOn:{})}}>{p[0].toUpperCase()+p.slice(1)}</button>))}</div>
+
+      {/* ═══ AGENT VIEW ═══ */}
+      {!isAdmin&&myAgent&&(
+        <div style={S.content}>
+          <div style={{...S.pCard,animation:anim?"fadeIn .45s ease both":"none"}}>
+            <div style={S.pTop}><div style={{...S.pAv,background:`${myAgent.color}12`,color:myAgent.color,border:`1.5px solid ${myAgent.color}30`}}>{myAgent.name[0]}</div><div><div style={S.pName}>{myAgent.name}</div><div style={S.pRole}>{myAgent.goal>0?`Daily Goal: ${$(myAgent.goal)}`:"Agent"}</div></div></div>
+            <div style={S.pStats}>
+              <div style={S.pSt}><div style={S.pStL}>{pLabel} AP</div><div style={{...S.pStV,color:"#C9A84C"}}>{$(agg[me]?.ap||0)}</div></div>
+              <div style={S.pDiv}/>
+              <div style={S.pSt}><div style={S.pStL}>Commission</div><div style={{...S.pStV,color:"#4EBF8B"}}>{$((agg[me]?.ap||0)*RATE)}</div></div>
+              <div style={S.pDiv}/>
+              <div style={S.pSt}><div style={S.pStL}>Policies</div><div style={{...S.pStV,color:"#5B8BD4"}}>{agg[me]?.pol||0}</div></div>
+            </div>
+            {myAgent.goal>0&&(()=>{const pct=Math.min(((data[me]?.ap||0)/myAgent.goal)*100,100);return(<div style={S.pProg}><div style={S.pPrTr}><div style={{...S.pPrFl,width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#4EBF8B,#6FE4AB)":`linear-gradient(90deg,${myAgent.color},${myAgent.color}99)`,animation:anim?"barIn 1s ease both":"none",transformOrigin:"left"}}/></div><span style={{...S.pPrPc,color:pct>=100?"#4EBF8B":"#3E4250"}}>{Math.round(pct)}%</span></div>);})()}
+            <div style={S.editLabel}>Update Today's Numbers</div>
+            <div style={S.nG}>
+              <div style={S.nC}><div style={S.nT}>AP WRITTEN</div>{editing===`${me}-ap`?(<input autoFocus type="number" inputMode="decimal" value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>commit(me,"ap")} onKeyDown={e=>onKey(e,me,"ap")} style={S.nI}/>):(<button onClick={()=>startEdit(me,"ap")} style={{...S.nB,color:(data[me]?.ap||0)>0?"#C9A84C":"#1A1C24"}}>{$(data[me]?.ap||0)}</button>)}</div>
+              <div style={S.nS}/>
+              <div style={S.nC}><div style={S.nT}>POLICIES</div>{editing===`${me}-pol`?(<input autoFocus type="number" inputMode="numeric" value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>commit(me,"pol")} onKeyDown={e=>onKey(e,me,"pol")} style={S.nI}/>):(<button onClick={()=>startEdit(me,"pol")} style={{...S.nB,color:(data[me]?.pol||0)>0?"#CBD5E1":"#1A1C24"}}>{data[me]?.pol||0}</button>)}</div>
+            </div>
+          </div>
+          <div style={{...S.secLbl,animation:anim?"fadeIn .5s ease both":"none",animationDelay:".15s"}}>Team Rankings — {pLabel}</div>
+          {ranked.map((m,i)=>{const v=agg[m.id]?.ap||0;const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`;const isMe=m.id===me;return(
+            <div key={m.id} style={{...S.rRow,...(isMe?{background:"rgba(201,168,76,.04)",border:"1px solid rgba(201,168,76,.1)"}:{}),...(i===0&&!isMe?S.rFirst:{}),animation:anim?"slideUp .4s ease both":"none",animationDelay:`${.2+i*.04}s`}}>
+              <div style={S.rL}><span style={{...S.rM,...(i<3?{fontSize:24}:{})}}>{medal}</span><div><div style={{...S.rN,...(i===0?{color:"#C9A84C"}:{}),...(isMe?{color:myAgent.color}:{})}}>{m.name}{isMe?" (You)":""}</div><div style={S.rS}>{agg[m.id]?.pol||0} pol · {$(v*RATE)} comm</div></div></div>
+              <div style={{...S.rV,color:v>0?"#C9A84C":"#111318"}}>{$(v)}</div></div>);})}
+        </div>
+      )}
+
+      {/* ═══ ADMIN VIEW ═══ */}
+      {isAdmin&&(<>
+        <div style={{...S.sumR,animation:anim?"fadeIn .35s ease both":"none"}}>
+          <div style={S.sumB}><div style={S.sumL}>TOTAL AP</div><div style={{...S.sumV,color:"#C9A84C"}}>{$(totAP)}</div><div style={S.sumSb}>{pLabel}</div></div>
+          <div style={S.sumB}><div style={S.sumL}>EST. COMM</div><div style={{...S.sumV,color:"#4EBF8B"}}>{$(totComm)}</div><div style={S.sumSb}>@ {RATE*100}%</div></div>
+          <div style={S.sumB}><div style={S.sumL}>POLICIES</div><div style={{...S.sumV,color:"#5B8BD4"}}>{totPol}</div><div style={S.sumSb}>{pLabel}</div></div>
+        </div>
+        <div style={S.tRow}>{[{id:"dash",l:"Team"},{id:"chart",l:"Charts"},{id:"board",l:"Ranks"}].map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{...S.tBtn,...(tab===t.id?S.tOn:{})}}>{t.l}</button>))}</div>
+        <div style={S.content}>
+          {tab==="dash"&&(<div style={S.cStack}>
+            {period!=="day"&&<div style={S.iBar}>Viewing {pLabel.toLowerCase()} totals · Edit today below</div>}
+            {AGENTS.map((m,i)=>{const row=data[m.id]||{ap:0,pol:0};const ag=agg[m.id]||{ap:0,pol:0};const comm=ag.ap*RATE;const pct=m.goal>0?Math.min((row.ap/m.goal)*100,100):-1;const isEd=f=>editing===`${m.id}-${f}`;return(
+              <div key={m.id} style={{...S.card,animation:anim?"fadeIn .4s ease both":"none",animationDelay:`${.04+i*.03}s`}}>
+                <div style={{...S.cBar,background:m.color}}/>
+                <div style={S.cTop}><div style={S.cNA}><div style={{...S.cAv,background:`${m.color}12`,color:m.color,border:`1.5px solid ${m.color}25`}}>{m.name[0]}</div><div><div style={S.cNm}>{m.name}</div>{m.goal>0&&<div style={S.cGl}>Goal: {$(m.goal)}</div>}</div></div>{comm>0&&<div style={S.cCm}>{$(comm)}<span style={S.cCmS}> comm</span></div>}</div>
+                {period!=="day"&&(ag.ap>0||ag.pol>0)&&(<div style={S.agR}><div style={S.agC}><span style={S.agCL}>{pLabel} AP:</span> <span style={{color:"#C9A84C",fontWeight:700}}>{$(ag.ap)}</span></div><div style={S.agC}><span style={S.agCL}>Pol:</span> <span style={{color:"#94A3B8",fontWeight:700}}>{ag.pol}</span></div></div>)}
+                <div style={S.nG}>
+                  <div style={S.nC}><div style={S.nT}>TODAY AP</div>{isEd("ap")?(<input autoFocus type="number" inputMode="decimal" value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>commit(m.id,"ap")} onKeyDown={e=>onKey(e,m.id,"ap")} style={S.nI}/>):(<button onClick={()=>startEdit(m.id,"ap")} style={{...S.nB,color:row.ap>0?"#C9A84C":"#1A1C24"}}>{$(row.ap)}</button>)}</div>
+                  <div style={S.nS}/>
+                  <div style={S.nC}><div style={S.nT}>POLICIES</div>{isEd("pol")?(<input autoFocus type="number" inputMode="numeric" value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>commit(m.id,"pol")} onKeyDown={e=>onKey(e,m.id,"pol")} style={S.nI}/>):(<button onClick={()=>startEdit(m.id,"pol")} style={{...S.nB,color:row.pol>0?"#CBD5E1":"#1A1C24"}}>{row.pol}</button>)}</div>
+                </div>
+                {pct>=0&&(<div style={S.prR}><div style={S.prT}><div style={{...S.prF,width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#4EBF8B,#6FE4AB)":`linear-gradient(90deg,${m.color},${m.color}99)`,animation:anim?"barIn .9s ease both":"none",animationDelay:`${.25+i*.04}s`,transformOrigin:"left"}}/></div><span style={{...S.prP,color:pct>=100?"#4EBF8B":"#2D3040"}}>{Math.round(pct)}%</span></div>)}
+              </div>);})}
+          </div>)}
+
+          {tab==="chart"&&(<div style={{animation:anim?"fadeIn .4s ease both":"none"}}>
+            <div style={S.secLbl}>AP Written — {pLabel}</div>
+            <div style={S.chA}>{AGENTS.map((m,i)=>{const v=agg[m.id]?.ap||0;const w=(v/maxAP)*100;return(<div key={m.id} style={{...S.bR,animation:anim?"slideUp .4s ease both":"none",animationDelay:`${i*.05}s`}}><div style={S.bL}><div style={{...S.bD,background:m.color}}/><span style={S.bN}>{m.name}</span></div><div style={S.bTr}><div style={{...S.bF,width:`${w}%`,background:`linear-gradient(90deg,${m.color},${m.color}99)`,animation:anim?"barIn .8s ease both":"none",animationDelay:`${.1+i*.06}s`,transformOrigin:"left"}}/></div><span style={S.bV}>{$(v)}</span></div>);})}</div>
+            <div style={{...S.secLbl,marginTop:28}}>Commission — {pLabel}</div>
+            <div style={S.cmG}>{AGENTS.map((m,i)=>{const c=(agg[m.id]?.ap||0)*RATE;return(<div key={m.id} style={{...S.cmC,animation:anim?"slideUp .35s ease both":"none",animationDelay:`${.2+i*.04}s`}}><div style={{...S.cmD,background:m.color}}/><span style={S.cmN}>{m.name}</span><span style={{...S.cmV,color:c>0?"#4EBF8B":"#111318"}}>{$(c)}</span></div>);})}</div>
+            <div style={{...S.secLbl,marginTop:28}}>Policies — {pLabel}</div>
+            <div style={S.chA}>{AGENTS.map((m,i)=>{const v=agg[m.id]?.pol||0;const mx=Math.max(...AGENTS.map(x=>agg[x.id]?.pol||0),1);const w=(v/mx)*100;return(<div key={m.id} style={{...S.bR,animation:anim?"slideUp .4s ease both":"none",animationDelay:`${.3+i*.05}s`}}><div style={S.bL}><div style={{...S.bD,background:m.color}}/><span style={S.bN}>{m.name}</span></div><div style={S.bTr}><div style={{...S.bF,width:`${w}%`,background:`linear-gradient(90deg,${m.color}77,${m.color}44)`,animation:anim?"barIn .8s ease both":"none",animationDelay:`${.35+i*.06}s`,transformOrigin:"left"}}/></div><span style={S.bV}>{v}</span></div>);})}</div>
+          </div>)}
+
+          {tab==="board"&&(<div style={{animation:anim?"fadeIn .4s ease both":"none"}}>
+            <div style={S.secLbl}>Leaderboard — {pLabel}</div>
+            {ranked.map((m,i)=>{const v=agg[m.id]?.ap||0;const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`;return(
+              <div key={m.id} style={{...S.rRow,...(i===0?S.rFirst:{}),animation:anim?"slideUp .45s ease both":"none",animationDelay:`${i*.05}s`}}>
+                <div style={S.rL}><span style={{...S.rM,...(i<3?{fontSize:26}:{})}}>{medal}</span><div><div style={{...S.rN,...(i===0?{color:"#C9A84C",fontSize:18}:{})}}>{m.name}</div><div style={S.rS}>{agg[m.id]?.pol||0} pol · {$(v*RATE)} comm</div></div></div>
+                <div style={{...S.rV,color:v>0?"#C9A84C":"#111318"}}>{$(v)}</div></div>);})}
+            <div style={S.ttB}><div style={S.ttTi}>Team Totals — {pLabel}</div>
+              {[{l:"Combined AP",v:$(totAP),c:"#C9A84C"},{l:"Combined Commission",v:$(totComm),c:"#4EBF8B"},{l:"Total Policies",v:totPol,c:"#5B8BD4"},{l:"Avg AP / Person",v:$(totAP/AGENTS.length),c:"#94A3B8"}].map((r,i)=>(
+                <div key={i} style={S.ttR}><span style={S.ttL}>{r.l}</span><span style={{...S.ttV,color:r.c}}>{r.v}</span></div>))}
+            </div>
+          </div>)}
+        </div>
+        <div style={S.bot}>{[{id:"dash",l:"Team",ic:"⊞"},{id:"chart",l:"Charts",ic:"◩"},{id:"board",l:"Ranks",ic:"◈"}].map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{...S.navB,color:tab===t.id?"#C9A84C":"#1A1C24"}}><span style={{fontSize:20}}>{t.ic}</span><span style={{fontSize:9,fontWeight:700,letterSpacing:.6}}>{t.l}</span></button>))}</div>
+      </>)}
+      {toast&&<div style={S.toast}>✓ {toast}</div>}
+    </div>
+  );
+}
+
+// ═══ STYLES ═══
+const L={wrap:{minHeight:"100dvh",background:"#050507",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 24px max(env(safe-area-inset-bottom),24px)",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"},glow:{position:"absolute",top:"-30%",left:"50%",transform:"translateX(-50%)",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,rgba(201,168,76,.06) 0%,transparent 70%)",pointerEvents:"none"},logoArea:{textAlign:"center",marginBottom:40},shield:{fontSize:52,color:"#C9A84C",animation:"glow 3s ease infinite",marginBottom:10},brand:{fontSize:20,fontWeight:900,letterSpacing:8,color:"#C9A84C",lineHeight:1.3},tag:{fontSize:8,letterSpacing:4,color:"#2D3040",fontWeight:700,marginTop:6,fontFamily:"'IBM Plex Mono',monospace"},dotRow:{display:"flex",gap:18,marginBottom:10,height:32,alignItems:"center"},dotOuter:{width:16,height:16,borderRadius:"50%",border:"1.5px solid rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center"},dotInner:{width:10,height:10,borderRadius:"50%"},err:{fontSize:13,color:"#D46B6B",fontWeight:600,height:20,marginBottom:6,animation:"shake .4s ease"},hint:{fontSize:13,color:"#252830",fontWeight:500,height:20,marginBottom:6},pad:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,width:"100%",maxWidth:270},btn:{width:"100%",aspectRatio:"1.35",borderRadius:16,background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.04)",color:"#E2E4EA",fontFamily:"'Outfit',sans-serif",fontWeight:500,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .12s ease"}};
+
+const S={shell:{minHeight:"100dvh",background:"#050507",fontFamily:"'Outfit',sans-serif",color:"#E2E4EA",display:"flex",flexDirection:"column",WebkitFontSmoothing:"antialiased"},topSafe:{padding:"max(env(safe-area-inset-top),12px) 16px 0"},hRow:{display:"flex",alignItems:"center",justifyContent:"space-between"},bRow:{display:"flex",alignItems:"center",gap:8},bIcon:{fontSize:16,color:"#C9A84C"},bTxt:{fontSize:10,fontWeight:900,letterSpacing:5,color:"#C9A84C"},welcome:{fontSize:13,color:"#2D3040",fontWeight:500,marginTop:2},logBtn:{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.04)",color:"#2D3040",fontSize:11,fontWeight:600,padding:"7px 16px",borderRadius:10,fontFamily:"'Outfit',sans-serif"},pillRow:{display:"flex",gap:5,padding:"14px 16px 0"},pill:{flex:1,padding:"10px 0",borderRadius:11,background:"rgba(255,255,255,.015)",color:"#252830",fontSize:12,fontWeight:700,textAlign:"center",border:"1px solid rgba(255,255,255,.02)",fontFamily:"'Outfit',sans-serif",transition:"all .2s"},pillOn:{background:"rgba(201,168,76,.06)",color:"#C9A84C",border:"1px solid rgba(201,168,76,.1)"},content:{flex:1,padding:"14px 16px",overflowY:"auto",paddingBottom:90},
+pCard:{background:"rgba(10,11,16,.9)",borderRadius:20,padding:"20px 18px",border:"1px solid rgba(255,255,255,.04)",marginBottom:22},pTop:{display:"flex",alignItems:"center",gap:14,marginBottom:18},pAv:{width:48,height:48,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800},pName:{fontSize:22,fontWeight:800,letterSpacing:-.4},pRole:{fontSize:11,color:"#2D3040",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,marginTop:1},pStats:{display:"flex",background:"rgba(255,255,255,.015)",borderRadius:14,padding:"16px 0",marginBottom:16},pSt:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4},pStL:{fontSize:7,fontWeight:700,letterSpacing:1.2,color:"#252830",fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase"},pStV:{fontSize:22,fontWeight:800,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:-.5},pDiv:{width:1,background:"rgba(255,255,255,.03)"},pProg:{display:"flex",alignItems:"center",gap:10,marginBottom:18},pPrTr:{flex:1,height:6,background:"rgba(255,255,255,.03)",borderRadius:4,overflow:"hidden"},pPrFl:{height:"100%",borderRadius:4},pPrPc:{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:700},editLabel:{fontSize:9,fontWeight:700,letterSpacing:1.5,color:"#1E2028",textTransform:"uppercase",marginBottom:10,fontFamily:"'IBM Plex Mono',monospace"},
+nG:{display:"flex",gap:0},nC:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6},nT:{fontSize:7,fontWeight:700,letterSpacing:1.3,color:"#1E2028",fontFamily:"'IBM Plex Mono',monospace"},nB:{background:"rgba(255,255,255,.015)",border:"1px solid rgba(255,255,255,.04)",borderRadius:14,padding:"14px 16px",fontFamily:"'IBM Plex Mono',monospace",fontSize:24,fontWeight:700,width:"100%",maxWidth:160,textAlign:"center",transition:"all .15s"},nI:{background:"rgba(201,168,76,.06)",border:"2px solid rgba(201,168,76,.25)",borderRadius:14,padding:"14px 8px",fontFamily:"'IBM Plex Mono',monospace",fontSize:24,fontWeight:700,color:"#C9A84C",width:"100%",maxWidth:160,textAlign:"center",WebkitAppearance:"none"},nS:{width:1,background:"rgba(255,255,255,.025)",margin:"10px 8px",alignSelf:"stretch"},
+secLbl:{fontSize:14,fontWeight:700,color:"#3E4250",marginBottom:10,letterSpacing:-.2},
+rRow:{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(10,11,16,.7)",borderRadius:16,padding:"15px 16px",border:"1px solid rgba(255,255,255,.03)",marginBottom:8},rFirst:{background:"rgba(201,168,76,.03)",border:"1px solid rgba(201,168,76,.07)"},rL:{display:"flex",alignItems:"center",gap:12},rM:{fontSize:16,minWidth:30,textAlign:"center"},rN:{fontSize:15,fontWeight:700,color:"#E2E4EA"},rS:{fontSize:10,color:"#252830",fontFamily:"'IBM Plex Mono',monospace",marginTop:2},rV:{fontSize:19,fontWeight:800,fontFamily:"'IBM Plex Mono',monospace"},
+sumR:{display:"flex",gap:8,padding:"10px 16px 0"},sumB:{flex:1,background:"rgba(10,11,16,.8)",borderRadius:16,padding:"14px 8px",border:"1px solid rgba(255,255,255,.03)",display:"flex",flexDirection:"column",alignItems:"center",gap:2},sumL:{fontSize:7,fontWeight:700,letterSpacing:1.2,color:"#1E2028",fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase"},sumV:{fontSize:18,fontWeight:800,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:-.5},sumSb:{fontSize:9,color:"#151820",fontWeight:500},
+tRow:{display:"flex",gap:4,padding:"10px 16px 0"},tBtn:{flex:1,padding:"9px 0",borderRadius:11,background:"rgba(255,255,255,.015)",color:"#252830",fontSize:12,fontWeight:700,textAlign:"center",border:"1px solid rgba(255,255,255,.02)",fontFamily:"'Outfit',sans-serif",transition:"all .2s"},tOn:{background:"rgba(201,168,76,.05)",color:"#C9A84C",border:"1px solid rgba(201,168,76,.08)"},
+cStack:{display:"flex",flexDirection:"column",gap:10},card:{background:"rgba(10,11,16,.7)",borderRadius:18,padding:"14px 14px 12px",border:"1px solid rgba(255,255,255,.03)",position:"relative",overflow:"hidden"},cBar:{position:"absolute",top:0,left:0,width:3,height:"100%",borderRadius:"18px 0 0 18px"},cTop:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingLeft:4},cNA:{display:"flex",alignItems:"center",gap:10},cAv:{width:38,height:38,borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800},cNm:{fontSize:16,fontWeight:700,letterSpacing:-.2},cGl:{fontSize:10,color:"#1E2028",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600},cCm:{fontSize:13,color:"#4EBF8B",fontWeight:700,fontFamily:"'IBM Plex Mono',monospace"},cCmS:{fontSize:10,fontWeight:500,color:"#4EBF8B88"},iBar:{background:"rgba(201,168,76,.04)",borderRadius:12,padding:"10px 14px",fontSize:12,color:"#C9A84C",fontWeight:500,textAlign:"center",border:"1px solid rgba(201,168,76,.07)",marginBottom:6},agR:{display:"flex",gap:8,marginBottom:10,paddingLeft:4},agC:{fontSize:11,color:"#94A3B8",fontFamily:"'IBM Plex Mono',monospace",background:"rgba(255,255,255,.015)",padding:"4px 10px",borderRadius:8},agCL:{color:"#252830",fontWeight:500},prR:{display:"flex",alignItems:"center",gap:8,marginTop:10,paddingLeft:4},prT:{flex:1,height:5,background:"rgba(255,255,255,.025)",borderRadius:4,overflow:"hidden"},prF:{height:"100%",borderRadius:4},prP:{fontFamily:"'IBM Plex Mono',monospace",fontSize:11,fontWeight:700,minWidth:30,textAlign:"right"},
+chA:{display:"flex",flexDirection:"column",gap:10},bR:{display:"flex",alignItems:"center",gap:8},bL:{display:"flex",alignItems:"center",gap:6,minWidth:85},bD:{width:8,height:8,borderRadius:3,flexShrink:0},bN:{fontSize:13,fontWeight:600,color:"#3E4250"},bTr:{flex:1,height:26,background:"rgba(255,255,255,.015)",borderRadius:8,overflow:"hidden"},bF:{height:"100%",borderRadius:8,minWidth:2},bV:{fontFamily:"'IBM Plex Mono',monospace",fontSize:12,fontWeight:700,color:"#3E4250",minWidth:55,textAlign:"right"},cmG:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8},cmC:{display:"flex",alignItems:"center",gap:8,background:"rgba(10,11,16,.6)",borderRadius:12,padding:"11px 12px",border:"1px solid rgba(255,255,255,.02)"},cmD:{width:8,height:8,borderRadius:3,flexShrink:0},cmN:{fontSize:12,fontWeight:600,color:"#3E4250",flex:1},cmV:{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:700},
+ttB:{background:"rgba(10,11,16,.6)",borderRadius:16,padding:18,border:"1px solid rgba(255,255,255,.03)",marginTop:10},ttTi:{fontSize:13,fontWeight:700,color:"#252830",marginBottom:14,letterSpacing:-.2},ttR:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid rgba(255,255,255,.02)"},ttL:{fontSize:13,color:"#252830",fontWeight:500},ttV:{fontFamily:"'IBM Plex Mono',monospace",fontSize:14,fontWeight:700},
+toast:{position:"fixed",bottom:92,left:"50%",transform:"translateX(-50%)",background:"rgba(78,191,139,.06)",color:"#4EBF8B",padding:"10px 24px",borderRadius:14,fontFamily:"'IBM Plex Mono',monospace",fontSize:13,fontWeight:600,border:"1px solid rgba(78,191,139,.1)",animation:"toastIn .3s ease",zIndex:100,backdropFilter:"blur(16px)",whiteSpace:"nowrap"},
+bot:{position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"rgba(5,5,7,.97)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,.03)",paddingBottom:"max(env(safe-area-inset-bottom),8px)",paddingTop:8,zIndex:50},navB:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"6px 0",background:"transparent",fontFamily:"'Outfit',sans-serif",transition:"color .2s"}};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
