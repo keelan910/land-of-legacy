@@ -50,7 +50,7 @@ const AGENTS=[
   {id:"kent",name:"Kente",goal:0,color:"#4EB8B5",pin:"1007"},
 ];
 const ADMIN_PIN="9999";
-const RATE=0.25;
+const RATE=0.85;
 const API="/.netlify/functions/api";
 
 async function dbInit(){try{await fetch(`${API}?action=init`);}catch(e){console.error(e);}}
@@ -221,7 +221,7 @@ function App(){
                   <div style={S.nS}/>
                   <div style={S.nC}><div style={S.nT}>POLICIES</div>{isEd("pol")?(<input autoFocus type="number" inputMode="numeric" value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>commit(m.id,"pol")} onKeyDown={e=>onKey(e,m.id,"pol")} style={S.nI}/>):(<button onClick={()=>startEdit(m.id,"pol")} style={{...S.nB,color:row.pol>0?"#CBD5E1":"#1A1C24"}}>{row.pol}</button>)}</div>
                 </div>
-                {pct>=0&&(<div style={S.prR}><div style={S.prT}><div style={{...S.prF,width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#4EBF8B,#6FE4AB)":`linear-gradient(90deg,${m.color},${m.color}99)`,animation:anim?"barIn .9s ease both":"none",animationDelay:`${.25+i*.04}s`,transformOrigin:"left"}}/></div><span style={{...S.prP,color:pct>=100?"#4EBF8B":"#2D3040"}}>{Math.round(pct)}%</span></div>)}
+                {pct>=0&&(<div style={S.prR}><div style={S.prT}><div style={{...S.prF,width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#4EBF8B,#6FE4AB)":`linear-gradient(90deg,${m.color},${m.color}99)`,animation:anim?"barIn .9s ease both":"none",animationDelay:`${.85+i*.04}s`,transformOrigin:"left"}}/></div><span style={{...S.prP,color:pct>=100?"#4EBF8B":"#2D3040"}}>{Math.round(pct)}%</span></div>)}
               </div>);})}
           </div>)}
 
