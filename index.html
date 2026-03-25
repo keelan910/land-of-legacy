@@ -60,7 +60,48 @@ const AGENTS = [
 const ADMIN_PIN = "9999";
 const RATE = 0.25;
 // ════════════════════════════════════════════════════════
+// ====================== SUPABASE HELPERS ======================
+const supabaseUrl = 'https://mqjizwswalijbgifmqmx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaml6d3N3YWxpamJnaWZtcW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjExNDUsImV4cCI6MjA4OTk5NzE0NX0.KgJeBYVvLnSkdYvpGYSV6wAdbD5ER7wIRfCTMQOmp-o';
 
+const supabase = Supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+const sbSet = async (path, val) => {
+  const [table, date] = path.split('/');
+  if (table === "days") {
+    const { error } = await supabase
+      .from('days')
+      .upsert({ date: date, data: val }, { onConflict: 'date' });
+    if (error) console.error("sbSet error:", error);
+  }
+};
+
+const sbGet = async (path) => {
+  const { data, error } = await supabase.from('days').select('*');
+  if (error) { console.error("sbGet error:", error); return {}; }
+  return data.reduce((acc, row) => {
+    acc[row.date] = row.data;
+    return acc;
+  }, {});
+};
+
+const sbListen = (path, callback) => {
+  const [table, date] = path.split('/');
+  if (table === "days") {
+    const channel = supabase
+      .channel(`realtime-${date}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'days', filter: `date=eq.${date}` },
+        (payload) => {
+          callback(payload.new ? payload.new.data : empty());
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }
+  return () => {};
+};
 // ====================== SUPABASE HELPERS ======================
 const supabaseUrl = 'https://mqjizwswalijbgifmqmx.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xaml6d3N3YWxpamJnaWZtcW14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MjExNDUsImV4cCI6MjA4OTk5NzE0NX0.KgJeBYVvLnSkdYvpGYSV6wAdbD5ER7wIRfCTMQOmp-o';
@@ -240,7 +281,7 @@ function App() {
   if(!data) return (
     <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#060709",gap:12}}>
       <div style={{width:24,height:24,border:"2px solid #1a1c24",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>
-      <div style={{fontSize:12,color:"#3A3D48",fontFamily:"'IBM Plex Mono',monospace"}}>Connecting to Firebase...</div>
+      <div style={{fontSize:12,color:"#3A3D48",fontFamily:"'IBM Plex Mono',monospace"}}>Connecting to Land of Legacy...</div>
     </div>
   );
 
